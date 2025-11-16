@@ -1,7 +1,10 @@
-﻿namespace Firma_tootajate_API.Models
+﻿using System.Text.Json.Serialization;
+
+namespace Firma_tootajate_API.Models
 {
     public class Tootajate
     {
+        [JsonIgnore]
         public int Id { get; set; }           
         public string Nimi { get; set; }           
         public string Isikukood { get; set; }      

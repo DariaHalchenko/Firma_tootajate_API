@@ -35,7 +35,6 @@ namespace Firma_tootajate_API.Controllers
                 tootaja.Id,
                 tootaja.Nimi,
                 tootaja.Email,
-                tootaja.IsAdmin,
                 tootaja.Amet,
                 tootaja.Tunnitasu
             });
