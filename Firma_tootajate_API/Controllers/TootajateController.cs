@@ -1,12 +1,14 @@
 ﻿using Firma_tootajate_API.Data;
 using Firma_tootajate_API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Firma_tootajate_API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/tootaja/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Töötaja")]
     public class TootajateController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

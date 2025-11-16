@@ -1,5 +1,6 @@
 ﻿using Firma_tootajate_API.Data;
 using Firma_tootajate_API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace Firma_tootajate_API.Controllers
 {
     [Route("api/admin/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin")]
     public class AdminTootajateController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -78,7 +80,11 @@ namespace Firma_tootajate_API.Controllers
         {
             var tootaja = await _context.Tootajates.AnyAsync(t => t.Email.ToLower() == dto.Email.ToLower());
             if (tootaja) return BadRequest("Sellise e-posti aadressiga töötaja on juba olemas.");
-
+            
+            var nimiExists = await _context.Tootajates.AnyAsync(t => t.Nimi.ToLower() == dto.Nimi.ToLower());
+            if (nimiExists)
+                return BadRequest("Sellise nimega töötaja on juba olemas.");
+            
             var uus_tootaja = new Tootajate
             {
                 Nimi = dto.Nimi,
@@ -86,7 +92,7 @@ namespace Firma_tootajate_API.Controllers
                 Amet = dto.Amet,
                 Tunnitasu = dto.Tunnitasu,
                 Email = dto.Email,
-                Parool = dto.Parool
+                Parool = BCrypt.Net.BCrypt.HashPassword(dto.Parool) 
             };
 
             _context.Tootajates.Add(uus_tootaja);

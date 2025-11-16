@@ -12,6 +12,6 @@ namespace Firma_tootajate_API.Models
         public decimal Tunnitasu { get; set; }  
         public string Email { get; set; }          
         public string Parool { get; set; }        
-        public bool IsAdmin { get; set; } = false; 
+        public bool IsAdmin { get; set; } = false;  // false - töötaja, true - administraator
     }
 }
