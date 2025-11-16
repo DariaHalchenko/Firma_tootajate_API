@@ -1,6 +1,17 @@
+using Firma_tootajate_API.Data;
+using Firma_tootajate_API.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Win32;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+builder.Services.AddHttpClient();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
