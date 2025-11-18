@@ -4,6 +4,5 @@
     {
         public string Nimi { get; set; }
         public string Email { get; set; }
-        public string Parool { get; set; }
     }
 }

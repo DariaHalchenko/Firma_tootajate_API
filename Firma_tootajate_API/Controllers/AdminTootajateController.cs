@@ -22,23 +22,33 @@ namespace Firma_tootajate_API.Controllers
         // Sorteerimine tunnitasu ja nime järgi
         // GET: api/admin/Tootajate?nimi=&amet=&tunnitasu=
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] string? nimi = null,[FromQuery] string? amet = null,
-            [FromQuery(Name = "tunnitasu")] string? sortByTunnitasu = null)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? nimi = null,
+            [FromQuery] string? amet = null,
+            [FromQuery(Name = "tunnitasu")] string? sortByTunnitasu = null) 
         {
             var paring = _context.Tootajates.AsQueryable();
 
             // Filtreerimine nime järgi
             if (!string.IsNullOrEmpty(nimi))
                 paring = paring.Where(t => t.Nimi.ToLower().Contains(nimi.ToLower()));
+
             // Filtreerimine ameti järgi
             if (!string.IsNullOrEmpty(amet))
                 paring = paring.Where(t => t.Amet.ToLower().Contains(amet.ToLower()));
 
-            // Sorteerimine tunnitasu ja nime järgi
+            // Sorteerimine tunnitasu järgi
             if (!string.IsNullOrEmpty(sortByTunnitasu))
-                paring = paring.OrderBy(t => t.Tunnitasu); // tunnitasu sorteerimine
+            {
+                if (sortByTunnitasu.ToLower() == "asc")
+                    paring = paring.OrderBy(t => t.Tunnitasu);
+                else if (sortByTunnitasu.ToLower() == "desc")
+                    paring = paring.OrderByDescending(t => t.Tunnitasu);
+            }
             else
+            {
                 paring = paring.OrderBy(t => t.Nimi); // sorteerimine nime järgi
+            }
 
             var tootajad = await paring.ToListAsync();
 

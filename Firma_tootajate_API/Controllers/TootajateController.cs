@@ -54,7 +54,6 @@ namespace Firma_tootajate_API.Controllers
 
             tootaja.Nimi = dto.Nimi;
             tootaja.Email = dto.Email;
-            tootaja.Parool = dto.Parool;
 
             await _context.SaveChangesAsync();
 
