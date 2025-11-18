@@ -117,5 +117,5 @@ using (var scope = app.Services.CreateScope())
     }
     SeedUsersAsync().GetAwaiter().GetResult();
 }
-
+// Run the application
 app.Run();
