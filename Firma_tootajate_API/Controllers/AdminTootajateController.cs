@@ -154,7 +154,7 @@ namespace Firma_tootajate_API.Controllers
         // ARUANNE: Kõigi töötajate palk
         // GET: api/admin/Tootajate/aruanne/palk
         [HttpGet("aruanne/palk")]
-        public async Task<IActionResult> SalaryReport()
+        public async Task<IActionResult> Palgaaruanne()
         {
             var worktimes = await _context.Worktimes
                 .Include(w => w.Tootajate)
@@ -177,7 +177,7 @@ namespace Firma_tootajate_API.Controllers
         // ARUANNE: Teatud päeval töötanud töötajad
         // GET: api/admin/Tootajate/aruanne/{kuupaev}
         [HttpGet("aruanne/{kuupaev}")]
-        public async Task<IActionResult> DailyReport(DateOnly kuupaev)
+        public async Task<IActionResult> Paevaaruanne(DateOnly kuupaev)
         {
             var aruanne = await _context.Worktimes
                 .Include(w => w.Tootajate)

@@ -20,7 +20,7 @@ namespace Firma_tootajate_API.Controllers
 
         // GET: api/Worktime/tootaja/{nimi}
         [HttpGet("tootaja/{nimi}")]
-        public async Task<IActionResult> GetWorktimeWithSalary(string nimi)
+        public async Task<IActionResult> GetWorktime(string nimi)
         {
             var tootaja = await _context.Tootajates
                 .FirstOrDefaultAsync(t => t.Nimi.ToLower() == nimi.ToLower());
@@ -52,7 +52,7 @@ namespace Firma_tootajate_API.Controllers
 
         // POST: api/Worktime/tootaja/lisada/{nimi}
         [HttpPost("tootaja/lisada/{nimi}")]
-        public async Task<IActionResult> AddWorktime(string nimi, [FromBody] Worktime worktime)
+        public async Task<IActionResult> PostWorktime(string nimi, [FromBody] Worktime worktime)
         {
             var tootaja = await _context.Tootajates
                 .FirstOrDefaultAsync(t => t.Nimi.ToLower() == nimi.ToLower());
