@@ -21,33 +21,33 @@ namespace Firma_tootajate_API.Controllers
         // Filtreerimine nime ja ameti järgi
         // Sorteerimine tunnitasu ja nime järgi
         // GET: api/admin/Tootajate?nimi=&amet=&tunnitasu=
+        // GET: api/admin/Tootajate?nimi=&amet=&sortAsc=true
         [HttpGet]
         public async Task<IActionResult> GetAll(
             [FromQuery] string? nimi = null,
             [FromQuery] string? amet = null,
-            [FromQuery(Name = "tunnitasu")] string? sortByTunnitasu = null) 
+            [FromQuery] bool? sortAsc = null)
         {
             var paring = _context.Tootajates.AsQueryable();
 
-            // Filtreerimine nime järgi
+            // Фильтрация по имени
             if (!string.IsNullOrEmpty(nimi))
                 paring = paring.Where(t => t.Nimi.ToLower().Contains(nimi.ToLower()));
 
-            // Filtreerimine ameti järgi
+            // Фильтрация по должности
             if (!string.IsNullOrEmpty(amet))
                 paring = paring.Where(t => t.Amet.ToLower().Contains(amet.ToLower()));
 
-            // Sorteerimine tunnitasu järgi
-            if (!string.IsNullOrEmpty(sortByTunnitasu))
+            // Сортировка по часовке
+            if (sortAsc.HasValue)
             {
-                if (sortByTunnitasu.ToLower() == "asc")
-                    paring = paring.OrderBy(t => t.Tunnitasu);
-                else if (sortByTunnitasu.ToLower() == "desc")
-                    paring = paring.OrderByDescending(t => t.Tunnitasu);
+                paring = sortAsc.Value
+                    ? paring.OrderBy(t => t.Tunnitasu)
+                    : paring.OrderByDescending(t => t.Tunnitasu);
             }
             else
             {
-                paring = paring.OrderBy(t => t.Nimi); // sorteerimine nime järgi
+                paring = paring.OrderBy(t => t.Nimi); // по умолчанию сортировка по имени
             }
 
             var tootajad = await paring.ToListAsync();
@@ -61,6 +61,7 @@ namespace Firma_tootajate_API.Controllers
                 t.Email
             }));
         }
+
 
         // GET: api/admin/Tootajate/{nimi} - saada konkreetse töötaja andmed nimepidi
         [HttpGet("{nimi}")]
@@ -154,24 +155,42 @@ namespace Firma_tootajate_API.Controllers
         // ARUANNE: Kõigi töötajate palk
         // GET: api/admin/Tootajate/aruanne/palk
         [HttpGet("aruanne/palk")]
-        public async Task<IActionResult> Palgaaruanne()
+        public async Task<IActionResult> Palgaaruanne([FromQuery] int aasta, [FromQuery] int kuu)
         {
+            if (aasta <= 0 || kuu <= 0 || kuu > 12)
+                return BadRequest("õiged parameetrid aasta ja kuu");
+
             var worktimes = await _context.Worktimes
                 .Include(w => w.Tootajate)
-                .ToListAsync(); // laadime kõik andmed mällu
+                .Where(w => w.Kuupaev.Year == aasta && w.Kuupaev.Month == kuu)
+                .ToListAsync();
 
             var aruanne = worktimes
                 .GroupBy(w => w.Tootajate.Nimi)
                 .Select(g => new
                 {
                     Nimi = g.Key,
-                    Tunnitasu = g.First().Tootajate.Tunnitasu,
-                    Palk = g.Sum(w => ((decimal)(w.Valjapaas - w.Sissepaas).TotalHours) * w.Tootajate.Tunnitasu)
+                    KokkuTunnid = Math.Round(g.Sum(w => w.Valjapaas.HasValue ? (w.Valjapaas.Value - w.Sissepaas).TotalHours : 0), 2),
+                    Palk = Math.Round(g.Sum(w => w.Valjapaas.HasValue ? (decimal)(w.Valjapaas.Value - w.Sissepaas).TotalHours * w.Tootajate.Tunnitasu : 0), 2)
                 })
                 .ToList();
 
-            return Ok(aruanne);
+            var kuuNimed = new string[]
+            {
+                "Jaanuar", "Veebruar", "Märts", "Aprill", "Mai", "Juuni",
+                "Juuli", "August", "September", "Oktoober", "November", "Detsember"
+            };
+
+            var kuuNimi = kuuNimed[kuu - 1];
+
+            return Ok(new
+            {
+                Kuu = kuuNimi,
+                Aasta = aasta,
+                Andmed = aruanne
+            });
         }
+
 
 
         // ARUANNE: Teatud päeval töötanud töötajad
@@ -179,20 +198,45 @@ namespace Firma_tootajate_API.Controllers
         [HttpGet("aruanne/{kuupaev}")]
         public async Task<IActionResult> Paevaaruanne(DateOnly kuupaev)
         {
-            var aruanne = await _context.Worktimes
-                .Include(w => w.Tootajate)
+            var tootajad = await _context.Tootajates.ToListAsync();
+            var worktimes = await _context.Worktimes
                 .Where(w => w.Kuupaev == kuupaev)
-                .Select(w => new
-                {
-                    w.Tootajate.Nimi,
-                    w.Kuupaev,
-                    w.Sissepaas,
-                    w.Valjapaas,
-                    Palk = ((decimal)(w.Valjapaas - w.Sissepaas).TotalHours) * w.Tootajate.Tunnitasu
-                })
                 .ToListAsync();
+
+            var aruanne = new List<object>();
+
+            foreach (var t in tootajad)
+            {
+                var w = worktimes.FirstOrDefault(x => x.TootajateId == t.Id);
+
+                if (w == null)
+                {
+                    aruanne.Add(new
+                    {
+                        t.Nimi,
+                        Sissepaas = "-",
+                        Valjapaas = "-",
+                        Tunnid = 0,
+                        Staatus = "Puudub"
+                    });
+                    continue;
+                }
+
+                var end = w.Valjapaas ?? TimeOnly.FromDateTime(DateTime.Now);
+                var hours = (decimal)(end - w.Sissepaas).TotalHours;
+
+                aruanne.Add(new
+                {
+                    t.Nimi,
+                    w.Sissepaas,
+                    Valjapaas = w.Valjapaas?.ToString() ?? "Pole lahkunud",
+                    Tunnid = Math.Round(hours, 2),
+                    Staatus = w.Valjapaas == null ? "Tööl" : "Lõpetanud"
+                });
+            }
 
             return Ok(aruanne);
         }
+
     }
 }

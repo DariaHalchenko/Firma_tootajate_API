@@ -32,13 +32,21 @@ namespace Firma_tootajate_API.Controllers
                 .Where(w => w.TootajateId == tootaja.Id)
                 .ToListAsync();
 
-            var result = worktimes.Select(w => new
+            var result = worktimes.Select(w =>
             {
-                w.Kuupaev,
-                w.Sissepaas,
-                w.Valjapaas,
-                Palk = ((decimal)(w.Valjapaas - w.Sissepaas).TotalHours) * tootaja.Tunnitasu
+                var end = w.Valjapaas ?? TimeOnly.FromDateTime(DateTime.Now); 
+                var hours = (decimal)(end - w.Sissepaas).TotalHours;
+
+                return new
+                {
+                    w.Kuupaev,
+                    w.Sissepaas,
+                    Valjapaas = w.Valjapaas?.ToString() ?? "Pole lahkunud",
+                    Palk = Math.Round(hours * tootaja.Tunnitasu, 2),
+                    Tunnid = Math.Round(hours, 2)
+                };
             });
+
 
             return Ok(new
             {
@@ -52,7 +60,7 @@ namespace Firma_tootajate_API.Controllers
 
         // POST: api/Worktime/tootaja/lisada/{nimi}
         [HttpPost("tootaja/lisada/{nimi}")]
-        public async Task<IActionResult> PostWorktime(string nimi, [FromBody] Worktime worktime)
+        public async Task<IActionResult> PostWorktime(string nimi, [FromBody] CreateWorktime dto)
         {
             var tootaja = await _context.Tootajates
                 .FirstOrDefaultAsync(t => t.Nimi.ToLower() == nimi.ToLower());
@@ -60,9 +68,13 @@ namespace Firma_tootajate_API.Controllers
             if (tootaja == null)
                 return NotFound("Töötajat ei leitud");
 
-            worktime.Id = 0;
-            worktime.TootajateId = tootaja.Id;
-            worktime.Tootajate = null;
+            var worktime = new Worktime
+            {
+                Kuupaev = dto.Kuupaev,
+                Sissepaas = dto.Sissepaas,
+                Valjapaas = dto.Valjapaas, // может быть null
+                TootajateId = tootaja.Id
+            };
 
             _context.Worktimes.Add(worktime);
             await _context.SaveChangesAsync();
@@ -74,6 +86,38 @@ namespace Firma_tootajate_API.Controllers
                 worktime.Kuupaev,
                 worktime.Sissepaas,
                 worktime.Valjapaas
+            });
+        }
+
+        // PUT: api/Worktime/valjapaas/{id}
+        // Обновление времени выхода для конкретного рабочего дня
+        [HttpPut("valjapaas/{nimi}/{kuupaev}")]
+        public async Task<IActionResult> UpdateValjapaasByName(string nimi, DateOnly kuupaev, [FromBody] UpdateValjapaas dto)
+        {
+            var worktime = await _context.Worktimes
+                .Include(w => w.Tootajate)
+                .FirstOrDefaultAsync(w => w.Kuupaev == kuupaev && w.Tootajate.Nimi.ToLower() == nimi.ToLower());
+
+            if (worktime == null)
+                return NotFound("Tööaega ei leitud");
+
+            // конвертируем строку в TimeOnly
+            if (!TimeOnly.TryParse(dto.Valjapaas, out var valjapaas))
+                return BadRequest("Vale aeg formaat");
+
+            worktime.Valjapaas = valjapaas;
+            await _context.SaveChangesAsync();
+
+            var hours = (decimal)(worktime.Valjapaas.Value - worktime.Sissepaas).TotalHours;
+
+            return Ok(new
+            {
+                Message = "Väljalogimise aeg uuendatud",
+                worktime.Kuupaev,
+                worktime.Sissepaas,
+                worktime.Valjapaas,
+                Tunnid = Math.Round(hours, 2),
+                Palk = Math.Round(hours * worktime.Tootajate.Tunnitasu, 2)
             });
         }
     }

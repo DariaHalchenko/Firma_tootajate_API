@@ -12,6 +12,6 @@ namespace Firma_tootajate_API.Models
         public Tootajate? Tootajate { get; set; }    
         public DateOnly Kuupaev { get; set; }
         public TimeOnly Sissepaas { get; set; }
-        public TimeOnly Valjapaas { get; set; }       
+        public TimeOnly? Valjapaas { get; set; }       
     }
 }
