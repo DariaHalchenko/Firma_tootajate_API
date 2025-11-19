@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Firma_tootajate_API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251119063827_addedTootajate")]
-    partial class addedTootajate
+    [Migration("20251119121945_addedWorktime")]
+    partial class addedWorktime
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -81,7 +81,7 @@ namespace Firma_tootajate_API.Migrations
                     b.Property<int>("TootajateId")
                         .HasColumnType("int");
 
-                    b.Property<TimeOnly>("Valjapaas")
+                    b.Property<TimeOnly?>("Valjapaas")
                         .HasColumnType("time");
 
                     b.HasKey("Id");

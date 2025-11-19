@@ -2,6 +2,6 @@
 {
     public class UpdateValjapaas
     {
-        public string Valjapaas { get; set; }
+        public TimeOnly Valjapaas { get; set; }
     }
 }

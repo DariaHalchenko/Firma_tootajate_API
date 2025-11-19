@@ -47,7 +47,7 @@ namespace Firma_tootajate_API.Controllers
             }
             else
             {
-                paring = paring.OrderBy(t => t.Nimi); // по умолчанию сортировка по имени
+                paring = paring.OrderBy(t => t.Nimi); 
             }
 
             var tootajad = await paring.ToListAsync();

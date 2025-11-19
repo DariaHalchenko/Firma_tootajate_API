@@ -39,7 +39,7 @@ namespace Firma_tootajate_API.Migrations
                     TootajateId = table.Column<int>(type: "int", nullable: false),
                     Kuupaev = table.Column<DateOnly>(type: "date", nullable: false),
                     Sissepaas = table.Column<TimeOnly>(type: "time", nullable: false),
-                    Valjapaas = table.Column<TimeOnly>(type: "time", nullable: false)
+                    Valjapaas = table.Column<TimeOnly>(type: "time", nullable: true)
                 },
                 constraints: table =>
                 {

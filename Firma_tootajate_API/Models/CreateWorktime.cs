@@ -4,6 +4,5 @@
     {
         public DateOnly Kuupaev { get; set; }
         public TimeOnly Sissepaas { get; set; }
-        public TimeOnly? Valjapaas { get; set; }
     }
 }

@@ -34,19 +34,18 @@ namespace Firma_tootajate_API.Controllers
 
             var result = worktimes.Select(w =>
             {
-                var end = w.Valjapaas ?? TimeOnly.FromDateTime(DateTime.Now); 
+                var end = w.Valjapaas ?? TimeOnly.FromDateTime(DateTime.Now);
                 var hours = (decimal)(end - w.Sissepaas).TotalHours;
 
                 return new
                 {
                     w.Kuupaev,
                     w.Sissepaas,
-                    Valjapaas = w.Valjapaas?.ToString() ?? "Pole lahkunud",
+                    Valjapaas = w.Valjapaas?.ToString(), 
                     Palk = Math.Round(hours * tootaja.Tunnitasu, 2),
                     Tunnid = Math.Round(hours, 2)
                 };
             });
-
 
             return Ok(new
             {
@@ -68,11 +67,16 @@ namespace Firma_tootajate_API.Controllers
             if (tootaja == null)
                 return NotFound("Töötajat ei leitud");
 
+            var exists = await _context.Worktimes
+                .AnyAsync(w => w.TootajateId == tootaja.Id && w.Kuupaev == dto.Kuupaev);
+            if (exists)
+                return BadRequest("Tööpäev selle kuupäevaga juba olemas");
+
             var worktime = new Worktime
             {
                 Kuupaev = dto.Kuupaev,
                 Sissepaas = dto.Sissepaas,
-                Valjapaas = dto.Valjapaas, // может быть null
+                Valjapaas = null,
                 TootajateId = tootaja.Id
             };
 
@@ -89,23 +93,26 @@ namespace Firma_tootajate_API.Controllers
             });
         }
 
-        // PUT: api/Worktime/valjapaas/{id}
-        // Обновление времени выхода для конкретного рабочего дня
+        // PUT: api/Worktime/valjapaas/{nimi}/{kuupaev}
         [HttpPut("valjapaas/{nimi}/{kuupaev}")]
-        public async Task<IActionResult> UpdateValjapaasByName(string nimi, DateOnly kuupaev, [FromBody] UpdateValjapaas dto)
+        public async Task<IActionResult> UpdateValjapaasByName(
+            string nimi,
+            DateOnly kuupaev,
+            [FromBody] UpdateValjapaas dto)
         {
             var worktime = await _context.Worktimes
                 .Include(w => w.Tootajate)
-                .FirstOrDefaultAsync(w => w.Kuupaev == kuupaev && w.Tootajate.Nimi.ToLower() == nimi.ToLower());
+                .FirstOrDefaultAsync(w =>
+                    w.Kuupaev == kuupaev &&
+                    w.Tootajate.Nimi.ToLower() == nimi.ToLower());
 
             if (worktime == null)
                 return NotFound("Tööaega ei leitud");
 
-            // конвертируем строку в TimeOnly
-            if (!TimeOnly.TryParse(dto.Valjapaas, out var valjapaas))
-                return BadRequest("Vale aeg formaat");
+            if (worktime.Valjapaas != null)
+                return BadRequest("Väljumise aeg on juba lisatud");
+            worktime.Valjapaas = dto.Valjapaas;
 
-            worktime.Valjapaas = valjapaas;
             await _context.SaveChangesAsync();
 
             var hours = (decimal)(worktime.Valjapaas.Value - worktime.Sissepaas).TotalHours;
